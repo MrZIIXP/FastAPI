@@ -46,7 +46,7 @@ def show_all_users(session: Session = Depends(get_db)):
 
 @app.post("/users")
 def create_user(
-    tg_id: int | None,
+    tg_id: int == None,
     username: str,
     session: Session = Depends(get_db)
 ):
