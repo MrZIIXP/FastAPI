@@ -46,25 +46,25 @@ def show_all_users(session: Session = Depends(get_db)):
 
 @app.post("/users")
 def create_user(
-    data,
+    tg_id: int | None,
+    username: str,
     session: Session = Depends(get_db)
 ):
     user = Users(
-        tg_id=data.tg_id | None,
-        username=data.username,
+        tg_id=tg_id | None,
+        username=username,
     )
     session.add(user)
     session.commit()
     return user
 
 @app.put('/users')
-def put_user(user_id: int, data, session: Session = Depends(get_db)):
+def do_admin_user(user_id: int, session: Session = Depends(get_db)):
     user = session.query(Users).filter(Users.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    for key, value in data.items():
-        setattr(user, key, value)
+    user.is_admin = True
     session.commit()
     session.refresh(user)
     return user
