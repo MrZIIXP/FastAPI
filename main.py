@@ -44,18 +44,21 @@ def show_all_users(session: Session = Depends(get_db)):
 
 
 
+from typing import Optional
+
 @app.post("/users")
 def create_user(
-    tg_id: int == None,
-    username: str,
+    tg_id: Optional[int] = None,
+    username: str = None,
     session: Session = Depends(get_db)
 ):
     user = Users(
-        tg_id=tg_id | None,
+        tg_id=tg_id,
         username=username,
     )
     session.add(user)
     session.commit()
+    session.refresh(user)  # чтобы вернуть обновлённый объект с id
     return user
 
 @app.put('/users')
