@@ -1,6 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
+from db import engine, sessionLocal
 from fastapi.middleware.cors import CORSMiddleware
+from models import Base, Users, Category, Orders, Shablones
+from sqlalchemy.orm import Session
 
+
+Base.metadata.create_all(engine)
 
 app = FastAPI(
 	title='My API',
@@ -15,7 +20,51 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def get_db():
+    db = sessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-@app.get('/hello')
-def hello():
-   return {'message': 'Привет'}
+
+
+@app.get('/users')
+def show_all_users(session: Session = Depends(get_db)):
+   r = session.query(Users).all()
+   return [
+		{
+			'id': i.id,
+			'tg_id': i.tg_id,
+			'username': i.username,
+			'is_admin': i.is_admin
+		}
+		for i in r
+	]
+
+
+
+@app.post("/users")
+def create_user(
+    data,
+    session: Session = Depends(get_db)
+):
+    user = Users(
+        tg_id=data.tg_id | None,
+        username=data.username,
+    )
+    session.add(user)
+    session.commit()
+    return user
+
+@app.put('/users')
+def put_user(user_id: int, data, session: Session = Depends(get_db)):
+    user = session.query(Users).filter(Users.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    for key, value in data.items():
+        setattr(user, key, value)
+    session.commit()
+    session.refresh(user)
+    return user
